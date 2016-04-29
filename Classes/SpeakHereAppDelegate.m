@@ -59,7 +59,9 @@ Copyright (C) 2009 Apple Inc. All Rights Reserved.
 
 - (void)applicationDidFinishLaunching:(UIApplication *)application {    
     
-    // Override point for customization after app launch    
+    // Override point for customization after app launch
+    [window setRootViewController:viewController];
+
     [window addSubview:viewController.view];
     [window makeKeyAndVisible];
 }
@@ -79,11 +81,6 @@ Copyright (C) 2009 Apple Inc. All Rights Reserved.
 }
 
 
-- (void)dealloc {
-    [viewController release];
-    [window release];
-    [super dealloc];
-}
 
 
 @end

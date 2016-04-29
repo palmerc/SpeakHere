@@ -50,6 +50,9 @@ Copyright (C) 2009 Apple Inc. All Rights Reserved.
 
 #import "SpeakHereController.h"
 
+#import <AudioToolbox/AudioToolbox.h>
+#import <AVFoundation/AVFoundation.h>
+
 @implementation SpeakHereController
 
 @synthesize player;
@@ -84,7 +87,6 @@ char *OSTypeToStr(char *buf, OSType t)
 	const char *dataFormat = OSTypeToStr(buf, format.mFormatID);
 	NSString* description = [[NSString alloc] initWithFormat:@"(%d ch. %s @ %g Hz)", format.NumberChannels(), dataFormat, format.mSampleRate, nil];
 	fileDescription.text = description;
-	[description release];	
 }
 
 #pragma mark Playback routines
@@ -113,7 +115,7 @@ char *OSTypeToStr(char *buf, OSType t)
 	player->DisposeQueue(true);
 
 	// now create a new queue for the recorded file
-	recordFilePath = (CFStringRef)[NSTemporaryDirectory() stringByAppendingPathComponent: @"recordedFile.caf"];
+	recordFilePath = (__bridge CFStringRef)[NSTemporaryDirectory() stringByAppendingPathComponent: @"recordedFile.caf"];
 	player->CreateQueueForFile(recordFilePath);
 		
 	// Set the button's state back to "record"
@@ -168,7 +170,7 @@ char *OSTypeToStr(char *buf, OSType t)
 void interruptionListener(	void *	inClientData,
                           UInt32	inInterruptionState)
 {
-	SpeakHereController *THIS = (SpeakHereController*)inClientData;
+	SpeakHereController *THIS = (__bridge SpeakHereController*)inClientData;
 	if (inInterruptionState == kAudioSessionBeginInterruption)
 	{
         if (THIS->player->IsRunning()) {
@@ -206,7 +208,7 @@ void propListener(	void *                  inClientData,
 					UInt32                  inDataSize,
 					const void *            inData)
 {
-	SpeakHereController *THIS = (SpeakHereController*)inClientData;
+	SpeakHereController *THIS = (__bridge SpeakHereController*)inClientData;
 	if (inID == kAudioSessionProperty_AudioRouteChange)
 	{
 		CFDictionaryRef routeDictionary = (CFDictionaryRef)inData;			
@@ -265,33 +267,28 @@ void propListener(	void *                  inClientData,
 	// Allocate our singleton instance for the recorder & player object
 	recorder = new AQRecorder();
 	player = new AQPlayer();
-		
-	OSStatus error = AudioSessionInitialize(NULL, NULL, interruptionListener, self);
-	if (error) printf("ERROR INITIALIZING AUDIO SESSION! %ld\n", error);
-	else 
-	{
-		UInt32 category = kAudioSessionCategory_PlayAndRecord;	
-		error = AudioSessionSetProperty(kAudioSessionProperty_AudioCategory, sizeof(category), &category);
-		if (error) printf("couldn't set audio category!");
-									
-		error = AudioSessionAddPropertyListener(kAudioSessionProperty_AudioRouteChange, propListener, self);
-		if (error) printf("ERROR ADDING AUDIO SESSION PROP LISTENER! %ld\n", error);
-		UInt32 inputAvailable = 0;
-		UInt32 size = sizeof(inputAvailable);
-		
-		// we do not want to allow recording if input is not available
-		error = AudioSessionGetProperty(kAudioSessionProperty_AudioInputAvailable, &size, &inputAvailable);
-		if (error) printf("ERROR GETTING INPUT AVAILABILITY! %ld\n", error);
-		btn_record.enabled = (inputAvailable) ? YES : NO;
-		
-		// we also need to listen to see if input availability changes
-		error = AudioSessionAddPropertyListener(kAudioSessionProperty_AudioInputAvailable, propListener, self);
-		if (error) printf("ERROR ADDING AUDIO SESSION PROP LISTENER! %ld\n", error);
 
-		error = AudioSessionSetActive(true); 
-		if (error) printf("AudioSessionSetActive (true) failed");
-	}
-	
+    NSError *error;
+    [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayAndRecord error:&error];
+    if (error) printf("couldn't set audio category!");
+//
+//    [[AVAudioSession sharedInstance] setCategory:AVAudioSessionRouteChangeNotification error:&error];
+//    if (error) printf("ERROR ADDING AUDIO SESSION PROP LISTENER! %ld\n", error);
+//    UInt32 inputAvailable = 0;
+//    UInt32 size = sizeof(inputAvailable);
+//
+//    // we do not want to allow recording if input is not available
+//    error = AudioSessionGetProperty(kAudioSessionProperty_AudioInputAvailable, &size, &inputAvailable);
+//    if (error) printf("ERROR GETTING INPUT AVAILABILITY! %ld\n", error);
+//    btn_record.enabled = (inputAvailable) ? YES : NO;
+//
+//    // we also need to listen to see if input availability changes
+//    error = AudioSessionAddPropertyListener(kAudioSessionProperty_AudioInputAvailable, propListener, self);
+//    if (error) printf("ERROR ADDING AUDIO SESSION PROP LISTENER! %ld\n", error);
+//
+//    error = AudioSessionSetActive(true);
+//    if (error) printf("AudioSessionSetActive (true) failed");
+
 	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playbackQueueStopped:) name:@"playbackQueueStopped" object:nil];
 	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playbackQueueResumed:) name:@"playbackQueueResumed" object:nil];
     
@@ -301,8 +298,7 @@ void propListener(	void *                  inClientData,
 	UIColor *bgColor = [[UIColor alloc] initWithRed:.39 green:.44 blue:.57 alpha:.5];
 	[lvlMeter_in setBackgroundColor:bgColor];
 	[lvlMeter_in setBorderColor:bgColor];
-	[bgColor release];
-	
+
 	// disable the play button since we have no recording to play yet
 	btn_play.enabled = NO;
 	playbackWasInterrupted = NO;
@@ -346,15 +342,8 @@ void propListener(	void *                  inClientData,
 #pragma mark Cleanup
 - (void)dealloc
 {
-	[btn_record release];
-	[btn_play release];
-	[fileDescription release];
-	[lvlMeter_in release];
-	
 	delete player;
 	delete recorder;
-	
-	[super dealloc];
 }
 
 @end

@@ -98,9 +98,7 @@ Copyright (C) 2009 Apple Inc. All Rights Reserved.
 
 -(void)setBorderColor: (UIColor *)borderColor
 {
-	if (_borderColor) [_borderColor release];
 	_borderColor = borderColor;
-	[_borderColor retain];
 
 	for (NSUInteger i=0; i < [_subLevelMeters count]; i++)
 	{
@@ -109,22 +107,18 @@ Copyright (C) 2009 Apple Inc. All Rights Reserved.
 		{
 			UIColor *oldColor = ((GLLevelMeter*)meter).borderColor;
 			((GLLevelMeter*)meter).borderColor = borderColor;
-			[oldColor release];
 		}
 		else
 		{
 			UIColor *oldColor = ((LevelMeter*)meter).borderColor;
 			((LevelMeter*)meter).borderColor = borderColor;
-			[oldColor release];
 		}	
 	}
 }
 
 -(void)setBackgroundColor: (UIColor *)bgColor
 {
-	if (_bgColor) [_bgColor release];
 	_bgColor = bgColor;
-	[_bgColor retain];
 	
 	for (NSUInteger i=0; i < [_subLevelMeters count]; i++)
 	{
@@ -145,7 +139,6 @@ Copyright (C) 2009 Apple Inc. All Rights Reserved.
 		UIView *thisMeter = [_subLevelMeters objectAtIndex:i];
 		[thisMeter removeFromSuperview];
 	}
-	[_subLevelMeters release];
 	
 	NSMutableArray *meters_build = [[NSMutableArray alloc] initWithCapacity:[_channelNumbers count]];
 	
@@ -186,12 +179,10 @@ Copyright (C) 2009 Apple Inc. All Rights Reserved.
 		
 		[meters_build addObject:newMeter];
 		[self addSubview:newMeter];
-		[newMeter release];
 	}	
 	
 	_subLevelMeters = [[NSArray alloc] initWithArray:meters_build];
 	
-	[meters_build release];
 }
 
 
@@ -271,14 +262,9 @@ bail:
 - (void)dealloc
 {
 	[_updateTimer invalidate];
-	[_channelNumbers release];
-	[_subLevelMeters release];
-	[_bgColor release];
-	[_borderColor release];
 	
 	delete _meterTable;
 	
-	[super dealloc];
 }
 
 
@@ -322,7 +308,6 @@ bail:
 					chan_array = [[NSArray alloc] initWithObjects:[NSNumber numberWithInt:0], [NSNumber numberWithInt:1], nil];
 
 				[self setChannelNumbers:chan_array];
-				[chan_array release];
 				
 				_chan_lvls = (AudioQueueLevelMeterState*)realloc(_chan_lvls, queueFormat.NumberChannels() * sizeof(AudioQueueLevelMeterState));
 			}
@@ -359,8 +344,6 @@ bail:
 - (NSArray *)channelNumbers { return _channelNumbers; }
 - (void)setChannelNumbers:(NSArray *)v
 {
-	[v retain];
-	[_channelNumbers release];
 	_channelNumbers = v;
 	[self layoutSubLevelMeters];
 }

@@ -47,40 +47,34 @@ Copyright (C) 2009 Apple Inc. All Rights Reserved.
 
 */
 
-
 #import "LevelMeter.h"
 
 
-int _cmp_levelThresholds(const void * a, const void * b)
-{
-	if (((LevelMeterColorThreshold *)a)->maxValue > ((LevelMeterColorThreshold *)b)->maxValue) return 1;
-	if (((LevelMeterColorThreshold *)a)->maxValue < ((LevelMeterColorThreshold *)b)->maxValue) return -1;
-	return 0;
-}
+
+@interface LevelMeter ()
+@end
+
 
 
 @implementation LevelMeter
-
-@synthesize vertical = _vertical;
-@synthesize bgColor = _bgColor;
-@synthesize borderColor = _borderColor;
-@synthesize variableLightIntensity = _variableLightIntensity;
+@synthesize level = _level;
+@synthesize numLights = _numLights;
+@synthesize peakLevel = _peakLevel;
 
 - (void)_performInit
 {
 	_level = 0.;
 	_numLights = 0;
-	_numColorThresholds = 3;
+
 	_variableLightIntensity = YES;
 	_bgColor = [[UIColor alloc] initWithRed:0. green:0. blue:0. alpha:0.6];
 	_borderColor = [[UIColor alloc] initWithRed:0. green:0. blue:0. alpha:1.];
-	_colorThresholds = malloc(3 * sizeof(LevelMeterColorThreshold));
-	_colorThresholds[0].maxValue = 0.25;
-	_colorThresholds[0].color = [[UIColor alloc] initWithRed:0. green:1. blue:0. alpha:1.];
-	_colorThresholds[1].maxValue = 0.8;
-	_colorThresholds[1].color = [[UIColor alloc] initWithRed:1. green:1. blue:0. alpha:1.];
-	_colorThresholds[2].maxValue = 1.;
-	_colorThresholds[2].color = [[UIColor alloc] initWithRed:1. green:0. blue:0. alpha:1.];
+	NSMutableArray *colorThresholds = [[NSMutableArray alloc] initWithCapacity:3];
+    [colorThresholds addObject:[[LevelMeterColorThreshold alloc] initWithMaxValue:0.25f color:[[UIColor alloc] initWithRed:0. green:1. blue:0. alpha:1.]]];
+    [colorThresholds addObject:[[LevelMeterColorThreshold alloc] initWithMaxValue:0.8f color:[[UIColor alloc] initWithRed:1. green:1. blue:0. alpha:1.]]];
+    [colorThresholds addObject:[[LevelMeterColorThreshold alloc] initWithMaxValue:1.f color:[[UIColor alloc] initWithRed:1. green:0. blue:0. alpha:1.]]];
+    _colorThresholds = [colorThresholds copy];
+
 	_vertical = ([self frame].size.width < [self frame].size.height) ? YES : NO;
 }
 
@@ -137,9 +131,9 @@ int _cmp_levelThresholds(const void * a, const void * b)
 			CGContextFillRect(cxt, bds);
 		}
 		
-		for (i=0; i<_numColorThresholds; i++)
+		for (i=0; i < self.colorThresholds.count; i++)
 		{
-			LevelMeterColorThreshold thisThresh = _colorThresholds[i];
+			LevelMeterColorThreshold *thisThresh = _colorThresholds[i];
 			CGFloat val = MIN(thisThresh.maxValue, _level);
 			
 			CGRect rect = CGRectMake(
@@ -197,10 +191,10 @@ int _cmp_levelThresholds(const void * a, const void * b)
 			
 			lightColor = _colorThresholds[0].color;
 			int color_i;
-			for (color_i=0; color_i<(_numColorThresholds-1); color_i++)
+			for (color_i=0; color_i<(_colorThresholds.count-1); color_i++)
 			{
-				LevelMeterColorThreshold thisThresh = _colorThresholds[color_i];
-				LevelMeterColorThreshold nextThresh = _colorThresholds[color_i + 1];
+				LevelMeterColorThreshold *thisThresh = _colorThresholds[color_i];
+				LevelMeterColorThreshold *nextThresh = _colorThresholds[color_i + 1];
 				if (thisThresh.maxValue <= lightMaxVal) lightColor = nextThresh.color;
 			}
 			
@@ -243,19 +237,6 @@ int _cmp_levelThresholds(const void * a, const void * b)
 	CGColorSpaceRelease(cs);
 }
 
-
-- (void)dealloc {
-	int i;
-	for (i=0; i<_numColorThresholds; i++) [_colorThresholds[i].color release];
-	free(_colorThresholds);
-	
-	[_bgColor release];
-	[_borderColor release];
-	
-	[super dealloc];
-}
-
-
 - (CGFloat)level { return _level; }
 - (void)setLevel:(CGFloat)v { _level = v; }
 
@@ -265,27 +246,9 @@ int _cmp_levelThresholds(const void * a, const void * b)
 - (NSUInteger)numLights { return _numLights; }
 - (void)setNumLights:(NSUInteger)v { _numLights = v; }
 
-- (LevelMeterColorThreshold *)colorThresholds:(NSUInteger *)count
+- (void)setColorThresholds:(NSArray<LevelMeterColorThreshold *> *)thresholds count:(NSUInteger)count
 {
-	*count = _numColorThresholds;
-	return _colorThresholds;
-}
 
-- (void)setColorThresholds:(LevelMeterColorThreshold *)thresholds count:(NSUInteger)count
-{
-	int i;
-	for (i=0; i<_numColorThresholds; i++) [_colorThresholds[i].color release];
-	_colorThresholds = realloc(_colorThresholds, sizeof(LevelMeterColorThreshold) * count);
-	
-	for (i=0; i<count; i++)
-	{
-		_colorThresholds[i].maxValue = thresholds[i].maxValue;
-		_colorThresholds[i].color = [thresholds[i].color copy];
-	}
-	
-	qsort(_colorThresholds, count, sizeof(LevelMeterColorThreshold), _cmp_levelThresholds);
-	
-	_numColorThresholds = count;
 }
 
 

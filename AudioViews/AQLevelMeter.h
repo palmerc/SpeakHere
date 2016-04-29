@@ -78,7 +78,7 @@ Copyright (C) 2009 Apple Inc. All Rights Reserved.
 
 @property				AudioQueueRef aq; // The AudioQueue object
 @property				CGFloat refreshHz; // How many times per second to redraw
-@property (retain)		NSArray *channelNumbers; // Array of NSNumber objects: The indices of the channels to display in this meter
+@property (strong)		NSArray *channelNumbers; // Array of NSNumber objects: The indices of the channels to display in this meter
 @property				BOOL showsPeaks; // Whether or not we show peak levels
 @property				BOOL vertical; // Whether the view is oriented V or H
 @property				BOOL useGL; // Whether or not to use OpenGL for drawing

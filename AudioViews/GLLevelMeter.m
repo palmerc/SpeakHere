@@ -55,6 +55,14 @@ Copyright (C) 2009 Apple Inc. All Rights Reserved.
 
 
 @implementation GLLevelMeter
+@synthesize level = _level;
+@synthesize numLights = _numLights;
+@synthesize variableLightIntensity = _variableLightIntensity;
+@synthesize bgColor = _bgColor;
+@synthesize borderColor = _borderColor;
+@synthesize colorThresholds = _colorThresholds;
+@synthesize vertical = _vertical;
+@synthesize peakLevel = _peakLevel;
 
 + (Class) layerClass
 {
@@ -110,17 +118,18 @@ Copyright (C) 2009 Apple Inc. All Rights Reserved.
 {
 	_level = 0.;
 	_numLights = 0;
-	_numColorThresholds = 3;
 	_variableLightIntensity = YES;
 	_bgColor = [[UIColor alloc] initWithRed:0. green:0. blue:0. alpha:0.6];
 	_borderColor = [[UIColor alloc] initWithRed:0. green:0. blue:0. alpha:1.];
-	_colorThresholds = (LevelMeterColorThreshold*)malloc(3 * sizeof(LevelMeterColorThreshold));
-	_colorThresholds[0].maxValue = 0.6;
-	_colorThresholds[0].color = [[UIColor alloc] initWithRed:0. green:1. blue:0. alpha:1.];
-	_colorThresholds[1].maxValue = 0.9;
-	_colorThresholds[1].color = [[UIColor alloc] initWithRed:1. green:1. blue:0. alpha:1.];
-	_colorThresholds[2].maxValue = 1.;
-	_colorThresholds[2].color = [[UIColor alloc] initWithRed:1. green:0. blue:0. alpha:1.];
+    NSMutableArray *colorThresholds = [[NSMutableArray alloc] initWithCapacity:3];
+    UIColor *color1 = [[UIColor alloc] initWithRed:0. green:1. blue:0. alpha:1.];
+    [colorThresholds addObject:[[LevelMeterColorThreshold alloc] initWithMaxValue:0.6f color:color1]];
+    UIColor *color2 = [[UIColor alloc] initWithRed:1. green:1. blue:0. alpha:1.];
+    [colorThresholds addObject:[[LevelMeterColorThreshold alloc] initWithMaxValue:0.9f color:color2]];
+    UIColor *color3 = [[UIColor alloc] initWithRed:1. green:0. blue:0. alpha:1.];
+    [colorThresholds addObject:[[LevelMeterColorThreshold alloc] initWithMaxValue:1.f color:color3]];
+    _colorThresholds = [colorThresholds copy];
+
 	_vertical = ([self frame].size.width < [self frame].size.height) ? YES : NO;
 
 	CAEAGLLayer *eaglLayer = (CAEAGLLayer*) self.layer;
@@ -135,7 +144,6 @@ Copyright (C) 2009 Apple Inc. All Rights Reserved.
 	_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES1];
 	
 	if(!_context || ![EAGLContext setCurrentContext:_context] || ![self _createFramebuffer]) {
-		[self release];
 		return;
 	}
 	
@@ -185,9 +193,9 @@ Copyright (C) 2009 Apple Inc. All Rights Reserved.
 		int i;
 		CGFloat currentTop = 0.;
 		
-		for (i=0; i<_numColorThresholds; i++)
+		for (i=0; i < _colorThresholds.count; i++)
 		{
-			LevelMeterColorThreshold thisThresh = _colorThresholds[i];
+			LevelMeterColorThreshold *thisThresh = _colorThresholds[i];
 			CGFloat val = MIN(thisThresh.maxValue, _level);
 						
 			CGRect rect = CGRectMake(
@@ -255,10 +263,10 @@ Copyright (C) 2009 Apple Inc. All Rights Reserved.
 			
 			lightColor = _colorThresholds[0].color;
 			int color_i;
-			for (color_i=0; color_i<(_numColorThresholds-1); color_i++)
+			for (color_i=0; color_i < (_colorThresholds.count - 1); color_i++)
 			{
-				LevelMeterColorThreshold thisThresh = _colorThresholds[color_i];
-				LevelMeterColorThreshold nextThresh = _colorThresholds[color_i + 1];
+				LevelMeterColorThreshold *thisThresh = _colorThresholds[color_i];
+				LevelMeterColorThreshold *nextThresh = _colorThresholds[color_i + 1];
 				if (thisThresh.maxValue <= lightMaxVal) lightColor = nextThresh.color;
 			}
 			
@@ -334,11 +342,9 @@ bail:
 		[EAGLContext setCurrentContext:nil];
 	}
 	
-	[_context release];
 	_context = nil;
 	
 	
-	[super dealloc];
 }
 
 

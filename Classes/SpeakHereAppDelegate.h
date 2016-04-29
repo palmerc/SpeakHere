@@ -56,8 +56,8 @@ Copyright (C) 2009 Apple Inc. All Rights Reserved.
     SpeakHereViewController *viewController;
 }
 
-@property (nonatomic, retain) IBOutlet UIWindow *window;
-@property (nonatomic, retain) IBOutlet SpeakHereViewController *viewController;
+@property (nonatomic, strong) IBOutlet UIWindow *window;
+@property (nonatomic, strong) IBOutlet SpeakHereViewController *viewController;
 
 @end
 
